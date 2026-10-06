@@ -79,3 +79,4 @@ def test_day_two_source_configuration_covers_fundamentals_macro_and_industry():
         series["economic_interpretation"] and series["known_limitations"]
         for series in industry_series.values()
     )
+    assert sources["market"]["yahoo_chart"]["availability_lag_days"] >= 1

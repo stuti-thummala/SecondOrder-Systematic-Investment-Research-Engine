@@ -8,7 +8,11 @@ from pathlib import Path
 
 import yaml
 
-from capex_engine.ingestion import FredCsvSource, SecCompanyFactsSource
+from capex_engine.ingestion import (
+    FredCsvSource,
+    SecCompanyFactsSource,
+    YahooChartSource,
+)
 
 LOGGER = logging.getLogger("capex_engine")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -100,6 +104,27 @@ def _ingest(start_date: str | None, end_date: str, output_dir: Path) -> None:
                 len(fred_data),
                 fred_path,
             )
+
+    market_config = source_config["market"]["yahoo_chart"]
+    market_source = YahooChartSource()
+    tickers = dict.fromkeys(
+        research_config["core_universe"] + [research_config["benchmark"]]
+    )
+    for ticker in tickers:
+        market_data = market_source.fetch(
+            start_date,
+            end_date,
+            ticker=ticker,
+            availability_lag_days=market_config["availability_lag_days"],
+        )
+        market_path = output_dir / "market" / f"{ticker.lower()}_prices.csv"
+        market_source.save_raw(market_data, market_path)
+        LOGGER.info(
+            "ingested dataset=%s_prices rows=%d path=%s",
+            ticker.lower(),
+            len(market_data),
+            market_path,
+        )
 
 
 def _read_yaml(path: Path) -> dict:

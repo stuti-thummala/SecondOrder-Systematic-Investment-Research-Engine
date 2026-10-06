@@ -101,3 +101,8 @@ industry:
         economic_interpretation: U.S. private nonresidential fixed investment, a broad proxy for infrastructure investment.
         known_limitations: Not data-center-specific and can move with unrelated private investment.
         availability_lag_days: 90
+
+market:
+  yahoo_chart:
+    provider: yahoo_chart
+    availability_lag_days: 1

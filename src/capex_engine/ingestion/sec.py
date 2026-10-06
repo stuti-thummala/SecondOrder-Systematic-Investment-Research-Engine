@@ -24,6 +24,8 @@ class SecCompanyFactsSource(DataSource):
         cik: str,
         user_agent: str,
         fact_mapping: dict[str, list[str]],
+        fact_units: dict[str, str] | None = None,
+        non_additive_series: set[str] | None = None,
     ) -> pd.DataFrame:
         start = _as_date(start_date)
         end = _as_date(end_date)
@@ -40,25 +42,32 @@ class SecCompanyFactsSource(DataSource):
         response.raise_for_status()
         company_facts = response.json()["facts"]["us-gaap"]
         retrieved_at = pd.Timestamp.now(tz="UTC")
+        fact_units = fact_units or {}
+        non_additive_series = non_additive_series or set()
         rows = []
 
         for series_id, candidate_tags in fact_mapping.items():
+            expected_unit = fact_units.get(series_id, "USD")
             fact = next(
                 (
-                    company_facts[tag]
+                    (company_facts[tag], expected_unit)
                     for tag in candidate_tags
                     if tag in company_facts
-                    and "USD" in company_facts[tag].get("units", {})
+                    and expected_unit in company_facts[tag].get("units", {})
                 ),
                 None,
             )
             if fact is None:
                 raise ValueError(
-                    f"No supported SEC USD fact found for {series_id}: "
-                    f"{candidate_tags}"
+                    f"No supported SEC fact found for {series_id}: "
+                    f"{candidate_tags} with unit {expected_unit}"
                 )
 
-            quarterly_facts = _quarterly_facts(fact["units"]["USD"])
+            selected_fact, unit = fact
+            quarterly_facts = _quarterly_facts(
+                selected_fact["units"][unit],
+                additive=series_id not in non_additive_series,
+            )
             for observation in quarterly_facts:
                 if not observation.get("start") or not observation.get("filed"):
                     continue
@@ -79,7 +88,7 @@ class SecCompanyFactsSource(DataSource):
                         "period_end_date": period_end,
                         "available_date": available_date,
                         "value": observation["val"],
-                        "unit": "USD",
+                        "unit": unit,
                         "frequency": "quarterly",
                         "source": f"SEC Company Facts:{ticker.upper()}",
                         "retrieved_at": retrieved_at,
@@ -104,7 +113,7 @@ def _as_date(value) -> date:
     return pd.Timestamp(value).date()
 
 
-def _quarterly_facts(facts: list[dict]) -> list[dict]:
+def _quarterly_facts(facts: list[dict], *, additive: bool = True) -> list[dict]:
     """Return standalone quarter values from SEC quarterly, YTD, and annual facts."""
     filed_facts = [
         fact
@@ -117,7 +126,11 @@ def _quarterly_facts(facts: list[dict]) -> list[dict]:
         duration = (_as_date(fact["end"]) - _as_date(fact["start"])).days
         if _QUARTER_MIN_DAYS <= duration <= _QUARTER_MAX_DAYS:
             direct.append(fact)
-        elif 150 <= duration <= 210 or 230 <= duration <= 300 or 320 <= duration <= 380:
+        elif additive and (
+            150 <= duration <= 210
+            or 230 <= duration <= 300
+            or 320 <= duration <= 380
+        ):
             cumulative.append(fact)
 
     # Prefer the source-reported standalone quarter where available. Otherwise,

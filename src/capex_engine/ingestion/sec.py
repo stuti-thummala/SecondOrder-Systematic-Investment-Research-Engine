@@ -58,16 +58,12 @@ class SecCompanyFactsSource(DataSource):
                     f"{candidate_tags}"
                 )
 
-            for observation in fact["units"]["USD"]:
+            quarterly_facts = _quarterly_facts(fact["units"]["USD"])
+            for observation in quarterly_facts:
                 if not observation.get("start") or not observation.get("filed"):
                     continue
 
                 period_end = _as_date(observation["end"])
-                period_start = _as_date(observation["start"])
-                duration_days = (period_end - period_start).days
-                if not _QUARTER_MIN_DAYS <= duration_days <= _QUARTER_MAX_DAYS:
-                    continue
-
                 # SEC Company Facts provides filing dates, not filing times. A
                 # one-day delay avoids treating a same-day filing as available
                 # before its intraday publication time.
@@ -106,3 +102,57 @@ class SecCompanyFactsSource(DataSource):
 
 def _as_date(value) -> date:
     return pd.Timestamp(value).date()
+
+
+def _quarterly_facts(facts: list[dict]) -> list[dict]:
+    """Return standalone quarter values from SEC quarterly, YTD, and annual facts."""
+    filed_facts = [
+        fact
+        for fact in facts
+        if fact.get("start") and fact.get("end") and fact.get("filed")
+    ]
+    direct = []
+    cumulative = []
+    for fact in filed_facts:
+        duration = (_as_date(fact["end"]) - _as_date(fact["start"])).days
+        if _QUARTER_MIN_DAYS <= duration <= _QUARTER_MAX_DAYS:
+            direct.append(fact)
+        elif 150 <= duration <= 210 or 230 <= duration <= 300 or 320 <= duration <= 380:
+            cumulative.append(fact)
+
+    # Prefer the source-reported standalone quarter where available. Otherwise,
+    # derive a standalone quarter from the current cumulative fact and the
+    # latest earlier cumulative fact with the same fiscal-year start.
+    by_filing_period = {
+        (_as_date(fact["end"]), _as_date(fact["filed"])): fact for fact in direct
+    }
+    for current in cumulative:
+        current_start = _as_date(current["start"])
+        current_end = _as_date(current["end"])
+        current_filed = _as_date(current["filed"])
+        filing_period = (current_end, current_filed)
+        if filing_period in by_filing_period:
+            continue
+
+        prior_facts = [
+            fact
+            for fact in filed_facts
+            if _as_date(fact["start"]) == current_start
+            and _as_date(fact["end"]) < current_end
+            and _as_date(fact["filed"]) <= current_filed
+        ]
+        if not prior_facts:
+            continue
+        prior = max(
+            prior_facts,
+            key=lambda fact: (_as_date(fact["end"]), _as_date(fact["filed"])),
+        )
+        by_filing_period[filing_period] = {
+            **current,
+            "val": current["val"] - prior["val"],
+        }
+
+    return sorted(
+        by_filing_period.values(),
+        key=lambda fact: (_as_date(fact["end"]), _as_date(fact["filed"])),
+    )

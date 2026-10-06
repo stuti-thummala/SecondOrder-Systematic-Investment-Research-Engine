@@ -1,0 +1,76 @@
+nodes:
+  - ai_demand
+  - hyperscaler_capex
+  - compute_demand
+  - data_center_buildout
+  - gpu_demand
+  - nvda
+  - hbm_demand
+  - mu
+  - power_cooling
+  - vrt
+
+edges:
+  - edge_id: AI_DEMAND_TO_CAPEX
+    source: ai_demand
+    target: hyperscaler_capex
+    direction: positive
+    expected_lag_quarters: [0, 1]
+    economic_rationale: AI adoption and infrastructure plans drive hyperscaler investment.
+    status: untested
+  - edge_id: CAPEX_TO_COMPUTE
+    source: hyperscaler_capex
+    target: compute_demand
+    direction: positive
+    expected_lag_quarters: [0, 1, 2]
+    economic_rationale: Higher hyperscaler capital expenditure funds additional compute capacity.
+    status: untested
+  - edge_id: CAPEX_TO_BUILDOUT
+    source: hyperscaler_capex
+    target: data_center_buildout
+    direction: positive
+    expected_lag_quarters: [0, 1, 2, 3]
+    economic_rationale: Higher infrastructure investment funds data-center construction and fit-out.
+    status: untested
+  - edge_id: COMPUTE_TO_GPU
+    source: compute_demand
+    target: gpu_demand
+    direction: positive
+    expected_lag_quarters: [0, 1, 2]
+    economic_rationale: Compute expansion increases accelerator requirements.
+    status: untested
+  - edge_id: GPU_TO_NVDA
+    source: gpu_demand
+    target: nvda
+    direction: positive
+    expected_lag_quarters: [0, 1, 2, 3]
+    economic_rationale: Greater GPU demand supports NVIDIA shipments and revenue.
+    status: untested
+  - edge_id: GPU_TO_HBM
+    source: gpu_demand
+    target: hbm_demand
+    direction: positive
+    expected_lag_quarters: [0, 1, 2]
+    economic_rationale: Accelerator deployments require high-bandwidth memory.
+    status: untested
+  - edge_id: HBM_TO_MU
+    source: hbm_demand
+    target: mu
+    direction: positive
+    expected_lag_quarters: [0, 1, 2, 3]
+    economic_rationale: Higher HBM demand can increase Micron memory shipments and revenue.
+    status: untested
+  - edge_id: BUILDOUT_TO_POWER_COOLING
+    source: data_center_buildout
+    target: power_cooling
+    direction: positive
+    expected_lag_quarters: [0, 1, 2, 3]
+    economic_rationale: New data-center capacity requires power and cooling infrastructure.
+    status: untested
+  - edge_id: POWER_COOLING_TO_VRT
+    source: power_cooling
+    target: vrt
+    direction: positive
+    expected_lag_quarters: [0, 1, 2, 3]
+    economic_rationale: Data-center power and cooling demand supports Vertiv orders and revenue.
+    status: untested

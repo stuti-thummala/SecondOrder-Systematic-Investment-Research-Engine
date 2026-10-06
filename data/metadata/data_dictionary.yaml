@@ -1,0 +1,47 @@
+observation_schema:
+  series_id:
+    type: string
+    description: Stable identifier for the measured series.
+  entity:
+    type: string
+    description: Company ticker or macro-series identifier.
+  observation_date:
+    type: date
+    description: Date the observation describes.
+  period_end_date:
+    type: date
+    description: End date of the reported measurement period.
+  available_date:
+    type: date
+    description: Earliest date the observation may enter a model.
+  value:
+    type: number
+    description: Numeric observation value.
+  unit:
+    type: string
+    description: Unit of measurement, such as USD or percent.
+  frequency:
+    type: string
+    description: Observation frequency, such as quarterly, annual, or daily.
+  source:
+    type: string
+    description: Provider and source series identifier.
+  retrieved_at:
+    type: datetime
+    description: UTC timestamp when the source response was retrieved.
+
+fundamental_fields:
+  revenue: USD; reported revenue for the fiscal period.
+  cost_of_revenue: USD; costs directly associated with reported revenue.
+  gross_profit: USD; revenue less cost of revenue.
+  operating_income: USD; income from operations.
+  net_income: USD; income after expenses and taxes.
+  diluted_eps: USD per share; diluted earnings per share.
+  operating_cash_flow: USD; cash from operating activities.
+  capital_expenditure: USD; cash capital expenditures.
+  free_cash_flow: USD; operating cash flow less capital expenditures.
+  cash: USD; cash and cash equivalents at period end.
+  total_debt: USD; reported total debt.
+  inventory: USD; inventory at period end.
+  accounts_receivable: USD; accounts receivable at period end.
+  diluted_shares: shares; diluted weighted-average shares outstanding.

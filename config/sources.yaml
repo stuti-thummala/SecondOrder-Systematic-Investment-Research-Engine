@@ -1,0 +1,16 @@
+fundamentals:
+  sec_company_facts:
+    provider: sec_company_facts
+    ticker: NVDA
+    cik: "0001045810"
+    facts:
+      revenue:
+        - RevenueFromContractWithCustomerExcludingAssessedTax
+        - SalesRevenueNet
+
+macro:
+  fred_csv:
+    provider: fred_csv
+    series_id: DGS10
+    series_name: US_10Y
+    availability_lag_days: 1

@@ -1,0 +1,62 @@
+hypotheses:
+  - id: H-001
+    statement: Higher aggregate hyperscaler CapEx growth predicts higher subsequent NVDA revenue growth.
+    predictor: aggregate_hyperscaler_capex_growth
+    outcome: nvda_revenue_growth
+    expected_sign: positive
+    test_lags_quarters: [0, 1, 2, 3, 4]
+    status: untested
+
+  - id: H-002
+    statement: Higher aggregate hyperscaler CapEx growth predicts higher subsequent MU revenue growth.
+    predictor: aggregate_hyperscaler_capex_growth
+    outcome: mu_revenue_growth
+    expected_sign: positive
+    test_lags_quarters: [0, 1, 2, 3, 4]
+    status: untested
+
+  - id: H-003
+    statement: Higher aggregate hyperscaler CapEx growth predicts higher subsequent VRT revenue growth.
+    predictor: aggregate_hyperscaler_capex_growth
+    outcome: vrt_revenue_growth
+    expected_sign: positive
+    test_lags_quarters: [0, 1, 2, 3, 4]
+    status: untested
+
+  - id: H-004
+    statement: The relationship between CapEx and downstream revenue varies across macroeconomic regimes.
+    predictor: aggregate_hyperscaler_capex_growth
+    outcome: downstream_revenue_growth
+    expected_sign: regime_dependent
+    test_lags_quarters: [0, 1, 2, 3, 4]
+    status: untested
+
+  - id: H-005
+    statement: A positive difference between model-implied earnings and market expectations predicts positive subsequent earnings revisions.
+    predictor: expectation_gap
+    outcome: subsequent_earnings_revision
+    expected_sign: positive
+    status: untested
+
+  - id: H-006
+    statement: A positive expectation gap predicts positive subsequent excess returns.
+    predictor: expectation_gap
+    outcome: subsequent_excess_return
+    expected_sign: positive
+    status: untested
+
+  - id: H-007
+    statement: The predictive value of the expectation gap remains after controlling for price momentum.
+    predictor: expectation_gap
+    outcome: subsequent_excess_return
+    controls: [price_momentum]
+    expected_sign: positive
+    status: untested
+
+  - id: H-008
+    statement: Constraint indicators improve earnings forecasts relative to a model using hyperscaler CapEx alone.
+    predictor: constraint_indicators
+    outcome: earnings_forecast_error
+    benchmark_predictor: aggregate_hyperscaler_capex_growth
+    expected_sign: lower_error
+    status: untested

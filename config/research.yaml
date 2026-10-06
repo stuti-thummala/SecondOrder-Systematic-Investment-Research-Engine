@@ -1,0 +1,26 @@
+start_date: "2016-01-01"
+benchmark: "SPY"
+
+core_universe:
+  - NVDA
+  - MU
+  - VRT
+
+capex_drivers:
+  - MSFT
+  - META
+  - GOOGL
+
+max_lag_quarters: 4
+forecast_horizon_quarters: 1
+transaction_cost_bps: 10
+
+reverse_dcf:
+  explicit_years: 5
+  discount_rate: 0.10
+  terminal_growth: 0.03
+
+portfolio:
+  gross_exposure: 2.0
+  max_position: 0.50
+  beta_limit: 0.10

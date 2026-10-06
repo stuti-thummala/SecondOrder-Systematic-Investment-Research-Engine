@@ -26,6 +26,7 @@ class SecCompanyFactsSource(DataSource):
         fact_mapping: dict[str, list[str]],
         fact_units: dict[str, str] | None = None,
         non_additive_series: set[str] | None = None,
+        instant_series: set[str] | None = None,
     ) -> pd.DataFrame:
         start = _as_date(start_date)
         end = _as_date(end_date)
@@ -44,6 +45,7 @@ class SecCompanyFactsSource(DataSource):
         retrieved_at = pd.Timestamp.now(tz="UTC")
         fact_units = fact_units or {}
         non_additive_series = non_additive_series or set()
+        instant_series = instant_series or set()
         rows = []
 
         for series_id, candidate_tags in fact_mapping.items():
@@ -67,9 +69,10 @@ class SecCompanyFactsSource(DataSource):
             quarterly_facts = _quarterly_facts(
                 selected_fact["units"][unit],
                 additive=series_id not in non_additive_series,
+                instant=series_id in instant_series,
             )
             for observation in quarterly_facts:
-                if not observation.get("start") or not observation.get("filed"):
+                if not observation.get("end") or not observation.get("filed"):
                     continue
 
                 period_end = _as_date(observation["end"])
@@ -113,8 +116,16 @@ def _as_date(value) -> date:
     return pd.Timestamp(value).date()
 
 
-def _quarterly_facts(facts: list[dict], *, additive: bool = True) -> list[dict]:
+def _quarterly_facts(
+    facts: list[dict], *, additive: bool = True, instant: bool = False
+) -> list[dict]:
     """Return standalone quarter values from SEC quarterly, YTD, and annual facts."""
+    if instant:
+        return sorted(
+            (fact for fact in facts if fact.get("end") and fact.get("filed")),
+            key=lambda fact: (_as_date(fact["end"]), _as_date(fact["filed"])),
+        )
+
     filed_facts = [
         fact
         for fact in facts

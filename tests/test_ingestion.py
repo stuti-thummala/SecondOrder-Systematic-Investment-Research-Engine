@@ -185,6 +185,55 @@ def test_sec_source_preserves_non_additive_units_without_subtracting_ytd_values(
     assert observations["unit"].tolist() == ["shares"]
 
 
+def test_sec_source_preserves_instant_balance_sheet_facts(monkeypatch):
+    payload = {
+        "facts": {
+            "us-gaap": {
+                "InventoryNet": {
+                    "units": {
+                        "USD": [
+                            {
+                                "end": "2024-03-31",
+                                "filed": "2024-05-01",
+                                "val": 500,
+                            },
+                            {
+                                "end": "2024-06-30",
+                                "filed": "2024-08-01",
+                                "val": 600,
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+    }
+    monkeypatch.setattr(
+        "capex_engine.ingestion.sec.requests.get",
+        lambda *args, **kwargs: _Response(payload=payload),
+    )
+
+    observations = SecCompanyFactsSource().fetch(
+        "2024-01-01",
+        "2024-12-31",
+        ticker="NVDA",
+        cik="1045810",
+        user_agent="Research contact@example.org",
+        fact_mapping={"inventory": ["InventoryNet"]},
+        instant_series={"inventory"},
+    )
+
+    assert observations["value"].tolist() == [500, 600]
+    assert observations["observation_date"].tolist() == [
+        date(2024, 3, 31),
+        date(2024, 6, 30),
+    ]
+    assert observations["available_date"].tolist() == [
+        date(2024, 5, 2),
+        date(2024, 8, 2),
+    ]
+
+
 def test_fred_source_normalizes_public_csv_and_applies_configured_availability_lag(
     monkeypatch,
 ):

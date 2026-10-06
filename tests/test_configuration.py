@@ -49,3 +49,33 @@ def test_data_dictionary_includes_point_in_time_observation_schema():
         "source",
         "retrieved_at",
     } == set(fields)
+
+
+def test_day_two_source_configuration_covers_fundamentals_macro_and_industry():
+    sources = _read_yaml("config/sources.yaml")
+    fundamentals = sources["fundamentals"]["sec_company_facts"]
+    macro_series = sources["macro"]["fred_csv"]["series"]
+    industry_series = sources["industry"]["fred_csv"]["series"]
+
+    assert {
+        "revenue",
+        "cost_of_revenue",
+        "gross_profit",
+        "operating_income",
+        "net_income",
+        "diluted_eps",
+        "operating_cash_flow",
+        "capital_expenditure",
+        "cash",
+        "inventory",
+        "accounts_receivable",
+        "diluted_shares",
+    }.issubset(fundamentals["facts"])
+    assert {"FED_FUNDS", "US_10Y", "US_2Y", "CPI", "INDUSTRIAL_PRODUCTION", "UNEMPLOYMENT"} == set(
+        macro_series
+    )
+    assert len(industry_series) >= 3
+    assert all(
+        series["economic_interpretation"] and series["known_limitations"]
+        for series in industry_series.values()
+    )

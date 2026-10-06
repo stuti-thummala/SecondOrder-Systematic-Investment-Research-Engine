@@ -1,16 +1,103 @@
 fundamentals:
   sec_company_facts:
     provider: sec_company_facts
-    ticker: NVDA
-    cik: "0001045810"
     facts:
       revenue:
         - RevenueFromContractWithCustomerExcludingAssessedTax
         - SalesRevenueNet
+        - Revenues
+      cost_of_revenue:
+        - CostOfRevenue
+        - CostOfGoodsAndServicesSold
+      gross_profit:
+        - GrossProfit
+      operating_income:
+        - OperatingIncomeLoss
+      net_income:
+        - NetIncomeLoss
+        - ProfitLoss
+      diluted_eps:
+        - EarningsPerShareDiluted
+      operating_cash_flow:
+        - NetCashProvidedByUsedInOperatingActivities
+      capital_expenditure:
+        - PaymentsToAcquirePropertyPlantAndEquipment
+        - PaymentsToAcquireProductiveAssets
+      cash:
+        - CashAndCashEquivalentsAtCarryingValue
+      total_debt_current:
+        - LongTermDebtCurrent
+        - LongTermDebtAndFinanceLeaseObligationsCurrent
+      total_debt_noncurrent:
+        - LongTermDebtNoncurrent
+        - LongTermDebtAndFinanceLeaseObligationsNoncurrent
+      inventory:
+        - InventoryNet
+      accounts_receivable:
+        - AccountsReceivableNetCurrent
+      diluted_shares:
+        - WeightedAverageNumberOfDilutedSharesOutstanding
+    fact_units:
+      diluted_eps: "USD / shares"
+      diluted_shares: shares
+    instant_series:
+      - cash
+      - total_debt_current
+      - total_debt_noncurrent
+      - inventory
+      - accounts_receivable
+    non_additive_series:
+      - diluted_eps
+      - diluted_shares
+    capex_fact:
+      - PaymentsToAcquirePropertyPlantAndEquipment
+      - PaymentsToAcquireProductiveAssets
 
 macro:
   fred_csv:
     provider: fred_csv
-    series_id: DGS10
-    series_name: US_10Y
-    availability_lag_days: 1
+    series:
+      FED_FUNDS:
+        series_id: FEDFUNDS
+        availability_lag_days: 45
+      US_10Y:
+        series_id: DGS10
+        availability_lag_days: 1
+      US_2Y:
+        series_id: DGS2
+        availability_lag_days: 1
+      CPI:
+        series_id: CPIAUCSL
+        availability_lag_days: 45
+      INDUSTRIAL_PRODUCTION:
+        series_id: INDPRO
+        availability_lag_days: 45
+      UNEMPLOYMENT:
+        series_id: UNRATE
+        availability_lag_days: 45
+
+industry:
+  fred_csv:
+    provider: fred_csv
+    series:
+      semiconductor_sales_proxy:
+        series_id: IPG3344S
+        frequency: monthly
+        units: index, 2017=100
+        economic_interpretation: Industrial production of semiconductor and electronic-component manufacturing.
+        known_limitations: Broader than semiconductor unit sales; represents U.S. domestic industrial production.
+        availability_lag_days: 45
+      memory_pricing_proxy:
+        series_id: PCU334413334413
+        frequency: monthly
+        units: producer price index
+        economic_interpretation: Producer-price movement for semiconductor and other electronic-component manufacturing.
+        known_limitations: Not memory-specific and does not directly measure contract or spot DRAM/HBM prices.
+        availability_lag_days: 45
+      data_center_investment_proxy:
+        series_id: PNFIC1
+        frequency: quarterly
+        units: billions of chained 2017 dollars, seasonally adjusted annual rate
+        economic_interpretation: U.S. private nonresidential fixed investment, a broad proxy for infrastructure investment.
+        known_limitations: Not data-center-specific and can move with unrelated private investment.
+        availability_lag_days: 90

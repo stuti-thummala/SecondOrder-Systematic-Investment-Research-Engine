@@ -2,6 +2,7 @@
 
 from capex_engine.ingestion.base import COMMON_COLUMNS, DataSource, DataValidationError
 from capex_engine.ingestion.fred import FredCsvSource
+from capex_engine.ingestion.market import YahooChartSource
 from capex_engine.ingestion.sec import SecCompanyFactsSource
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "DataValidationError",
     "FredCsvSource",
     "SecCompanyFactsSource",
+    "YahooChartSource",
 ]

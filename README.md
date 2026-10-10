@@ -26,6 +26,7 @@ export SEC_USER_AGENT="Researcher Name researcher@example.org"
 
 ```bash
 python -m capex_engine ingest --start-date 2016-01-01 --end-date 2026-10-06
+python -m capex_engine features --start-date 2016-01-01 --end-date 2026-10-06
 ```
 
 Ingestion covers NVDA, MU, and VRT fundamentals; MSFT, META, and GOOGL
@@ -37,6 +38,13 @@ series-specific conservative calendar-day lags in `config/sources.yaml`.
 These date-level policies do not claim intraday release precision or preserve
 historical source vintages; vintage-sensitive research must account for this
 limitation.
+
+The `features` command writes `data/processed/quarterly_panel.csv` and
+`data/processed/missing_data_report.csv`. It refuses to produce a panel if any
+input observation is missing its availability date or has an availability date
+earlier than its observation date. Input data sources missing entirely are
+listed in the coverage report so an incomplete data pull cannot be mistaken
+for complete historical coverage.
 
 Project scope and detailed requirements are in [SPEC.md](./SPEC.md); the
 original supplied file, [spec.md](./spec.md), is retained unchanged.

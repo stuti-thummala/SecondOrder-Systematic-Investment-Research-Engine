@@ -76,7 +76,13 @@ def build_quarterly_panel(
             series_ids = set(expected_series)
         else:
             series_ids = set(expected_series).union(data["series_id"].dropna())
-            data["_observation_date"] = pd.to_datetime(data["observation_date"])
+            data["_observation_date"] = pd.to_datetime(
+                data["observation_date"], errors="coerce"
+            )
+            if data["_observation_date"].isna().any():
+                raise DataValidationError(
+                    f"{source_path} has missing or invalid observation dates"
+                )
             data["_available_date"] = pd.to_datetime(
                 data["available_date"], errors="coerce"
             )

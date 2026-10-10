@@ -7,6 +7,7 @@ from capex_engine.processing import (
     build_quarterly_panel,
     filter_available_as_of,
 )
+from capex_engine.ingestion import DataValidationError
 
 
 def _observation(observation_date, available_date, value):
@@ -87,3 +88,22 @@ def test_missing_expected_input_is_explicit_in_coverage_report(tmp_path):
     assert report.loc[0, "file_exists"] == False  # noqa: E712
     assert report.loc[0, "rows"] == 0
     assert report.loc[0, "missing_quarters"] == 1
+
+
+def test_quarterly_panel_rejects_invalid_observation_dates(tmp_path):
+    raw_root = tmp_path / "raw"
+    source_path = raw_root / "fundamentals" / "nvda.csv"
+    source_path.parent.mkdir(parents=True)
+    pd.DataFrame(
+        [_observation("not-a-date", "2024-05-20", 100)]
+    ).to_csv(source_path, index=False)
+
+    with pytest.raises(DataValidationError, match="observation dates"):
+        build_quarterly_panel(
+            raw_root,
+            {"nvda_fundamentals": ("fundamentals/nvda.csv", ["revenue"])},
+            tmp_path / "processed" / "quarterly_panel.csv",
+            tmp_path / "metadata" / "missing_data_report.csv",
+            "2024-01-01",
+            "2024-06-30",
+        )

@@ -171,6 +171,7 @@ def build_quarterly_panel(
         else pd.DataFrame(columns=PANEL_COLUMNS)
     )
     if not panel.empty:
+        panel = _append_derived_fundamentals(panel)
         panel = panel.sort_values(
             ["quarter", "series_id", "entity", "observation_date", "available_date"]
         ).reset_index(drop=True)
@@ -178,6 +179,155 @@ def build_quarterly_panel(
     panel_destination.parent.mkdir(parents=True, exist_ok=True)
     panel.to_csv(panel_destination, index=False)
     return panel, report
+
+
+def _append_derived_fundamentals(panel: pd.DataFrame) -> pd.DataFrame:
+    """Add derived company fundamentals, retaining latest-input availability."""
+    fundamentals = panel.loc[
+        panel["series_id"].isin(
+            {
+                "revenue",
+                "gross_profit",
+                "operating_income",
+                "operating_cash_flow",
+                "capital_expenditure",
+                "total_debt_current",
+                "total_debt_noncurrent",
+            }
+        )
+    ].copy()
+    if fundamentals.empty:
+        return panel
+
+    fundamentals["available_date"] = pd.to_datetime(
+        fundamentals["available_date"], errors="raise"
+    )
+    fundamentals["period_end_date"] = pd.to_datetime(
+        fundamentals["period_end_date"], errors="raise"
+    )
+    fundamentals["value"] = pd.to_numeric(fundamentals["value"], errors="raise")
+    latest = fundamentals.sort_values("available_date").drop_duplicates(
+        ["entity", "period_end_date", "series_id"], keep="last"
+    )
+    values = latest.pivot(
+        index=["entity", "period_end_date"],
+        columns="series_id",
+        values="value",
+    )
+    available = latest.groupby(["entity", "period_end_date"])[
+        "available_date"
+    ].max()
+    retrieved = latest.groupby(["entity", "period_end_date"])[
+        "retrieved_at"
+    ].max()
+    rows = []
+
+    for (entity, period_end), inputs in values.iterrows():
+        if "revenue" in inputs and pd.notna(inputs["revenue"]):
+            if "gross_profit" in inputs and pd.notna(inputs["gross_profit"]):
+                rows.append(
+                    _derived_row(
+                        "gross_margin",
+                        entity,
+                        period_end,
+                        inputs["gross_profit"] / inputs["revenue"],
+                        "ratio",
+                        available.loc[(entity, period_end)],
+                        retrieved.loc[(entity, period_end)],
+                    )
+                )
+            if "operating_income" in inputs and pd.notna(
+                inputs["operating_income"]
+            ):
+                rows.append(
+                    _derived_row(
+                        "operating_margin",
+                        entity,
+                        period_end,
+                        inputs["operating_income"] / inputs["revenue"],
+                        "ratio",
+                        available.loc[(entity, period_end)],
+                        retrieved.loc[(entity, period_end)],
+                    )
+                )
+            if (
+                "operating_cash_flow" in inputs
+                and pd.notna(inputs["operating_cash_flow"])
+                and "capital_expenditure" in inputs
+                and pd.notna(inputs["capital_expenditure"])
+            ):
+                free_cash_flow = (
+                    inputs["operating_cash_flow"] - inputs["capital_expenditure"]
+                )
+                rows.extend(
+                    [
+                        _derived_row(
+                            "free_cash_flow",
+                            entity,
+                            period_end,
+                            free_cash_flow,
+                            "USD",
+                            available.loc[(entity, period_end)],
+                            retrieved.loc[(entity, period_end)],
+                        ),
+                        _derived_row(
+                            "free_cash_flow_margin",
+                            entity,
+                            period_end,
+                            free_cash_flow / inputs["revenue"],
+                            "ratio",
+                            available.loc[(entity, period_end)],
+                            retrieved.loc[(entity, period_end)],
+                        ),
+                    ]
+                )
+
+        if (
+            "total_debt_current" in inputs
+            and pd.notna(inputs["total_debt_current"])
+            and "total_debt_noncurrent" in inputs
+            and pd.notna(inputs["total_debt_noncurrent"])
+        ):
+            rows.append(
+                _derived_row(
+                    "total_debt",
+                    entity,
+                    period_end,
+                    inputs["total_debt_current"] + inputs["total_debt_noncurrent"],
+                    "USD",
+                    available.loc[(entity, period_end)],
+                    retrieved.loc[(entity, period_end)],
+                )
+            )
+
+    if not rows:
+        return panel
+    return pd.concat([panel, pd.DataFrame(rows, columns=PANEL_COLUMNS)], ignore_index=True)
+
+
+def _derived_row(
+    series_id: str,
+    entity: str,
+    period_end: pd.Timestamp,
+    value: float,
+    unit: str,
+    available_date: pd.Timestamp,
+    retrieved_at,
+) -> dict:
+    period_end_date = period_end.date()
+    return {
+        "quarter": str(period_end.to_period("Q-DEC")),
+        "series_id": series_id,
+        "entity": entity,
+        "observation_date": period_end_date,
+        "period_end_date": period_end_date,
+        "available_date": available_date.date(),
+        "value": value,
+        "unit": unit,
+        "frequency": "quarterly",
+        "source": "derived:fundamental_metrics",
+        "retrieved_at": retrieved_at,
+    }
 
 
 def _count_point_in_time_violations(data: pd.DataFrame) -> int:

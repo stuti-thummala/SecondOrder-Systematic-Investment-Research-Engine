@@ -45,6 +45,11 @@ fundamental_fields:
   inventory: USD; inventory at period end.
   accounts_receivable: USD; accounts receivable at period end.
   diluted_shares: shares; diluted weighted-average shares outstanding.
+  gross_margin: ratio; gross profit divided by revenue.
+  operating_margin: ratio; operating income divided by revenue.
+  free_cash_flow: USD; operating cash flow less capital expenditures.
+  free_cash_flow_margin: ratio; free cash flow divided by revenue.
+  total_debt: USD; current debt plus non-current debt.
 
 industry_series:
   semiconductor_sales_proxy:

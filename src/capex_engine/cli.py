@@ -13,6 +13,7 @@ from capex_engine.ingestion import (
     SecCompanyFactsSource,
     YahooChartSource,
 )
+from capex_engine.processing import build_quarterly_panel
 
 LOGGER = logging.getLogger("capex_engine")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -25,11 +26,27 @@ def main() -> None:
     ingest.add_argument("--start-date")
     ingest.add_argument("--end-date", default=date.today().isoformat())
     ingest.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data/raw")
+    features = commands.add_parser(
+        "features", help="build point-in-time quarterly research panel"
+    )
+    features.add_argument("--input-dir", type=Path, default=PROJECT_ROOT / "data/raw")
+    features.add_argument(
+        "--output-dir", type=Path, default=PROJECT_ROOT / "data/processed"
+    )
+    features.add_argument("--start-date")
+    features.add_argument("--end-date", default=date.today().isoformat())
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if args.command == "ingest":
         _ingest(args.start_date, args.end_date, args.output_dir)
+    elif args.command == "features":
+        _features(
+            args.start_date,
+            args.end_date,
+            args.input_dir,
+            args.output_dir,
+        )
 
 
 def _ingest(start_date: str | None, end_date: str, output_dir: Path) -> None:
@@ -130,3 +147,66 @@ def _ingest(start_date: str | None, end_date: str, output_dir: Path) -> None:
 def _read_yaml(path: Path) -> dict:
     with path.open(encoding="utf-8") as file:
         return yaml.safe_load(file)
+
+
+def _features(
+    start_date: str | None,
+    end_date: str,
+    input_dir: Path,
+    output_dir: Path,
+) -> None:
+    research_config = _read_yaml(PROJECT_ROOT / "config/research.yaml")
+    source_config = _read_yaml(PROJECT_ROOT / "config/sources.yaml")
+    company_config = _read_yaml(PROJECT_ROOT / "config/companies.yaml")
+    start_date = start_date or research_config["start_date"]
+
+    expected_datasets = {}
+    sec_series = list(source_config["fundamentals"]["sec_company_facts"]["facts"])
+    for ticker in company_config["core_companies"]:
+        expected_datasets[f"{ticker.lower()}_fundamentals"] = (
+            Path("fundamentals") / f"{ticker.lower()}_fundamentals.csv",
+            sec_series,
+        )
+    for ticker in company_config["capex_drivers"]:
+        expected_datasets[f"{ticker.lower()}_capex"] = (
+            Path("fundamentals") / f"{ticker.lower()}_capex.csv",
+            ["capital_expenditure"],
+        )
+
+    for category in ("macro", "industry"):
+        for series_name in source_config[category]["fred_csv"]["series"]:
+            expected_datasets[series_name.lower()] = (
+                Path(category) / f"{series_name.lower()}.csv",
+                [series_name],
+            )
+
+    tickers = dict.fromkeys(
+        research_config["core_universe"] + [research_config["benchmark"]]
+    )
+    for ticker in tickers:
+        expected_datasets[f"{ticker.lower()}_market"] = (
+            Path("market") / f"{ticker.lower()}_prices.csv",
+            [f"{ticker.lower()}_adjusted_close", f"{ticker.lower()}_volume"],
+        )
+
+    panel_path = output_dir / "quarterly_panel.csv"
+    report_path = output_dir / "missing_data_report.csv"
+    panel, report = build_quarterly_panel(
+        input_dir,
+        expected_datasets,
+        panel_path,
+        report_path,
+        start_date,
+        end_date,
+    )
+    LOGGER.info(
+        "built quarterly_panel rows=%d series=%d path=%s",
+        len(panel),
+        report["series_id"].nunique(),
+        panel_path,
+    )
+    LOGGER.info(
+        "wrote missing_data_report rows=%d path=%s",
+        len(report),
+        report_path,
+    )

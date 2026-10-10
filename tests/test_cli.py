@@ -1,6 +1,6 @@
 import pandas as pd
 
-from capex_engine.cli import _ingest
+from capex_engine.cli import _features, _ingest
 from capex_engine.ingestion import (
     COMMON_COLUMNS,
     FredCsvSource,
@@ -47,3 +47,18 @@ def test_ingest_fetches_all_configured_company_and_series_data(monkeypatch, tmp_
     assert len(list((tmp_path / "industry").glob("*.csv"))) == 3
     assert market_requests == ["NVDA", "MU", "VRT", "SPY"]
     assert len(list((tmp_path / "market").glob("*.csv"))) == 4
+
+
+def test_features_cli_writes_panel_and_missing_data_report(tmp_path):
+    _features(
+        "2024-01-01",
+        "2024-03-31",
+        tmp_path / "raw",
+        tmp_path / "processed",
+    )
+
+    assert (tmp_path / "processed" / "quarterly_panel.csv").is_file()
+    report = pd.read_csv(tmp_path / "processed" / "missing_data_report.csv")
+    assert not report.empty
+    assert not report["file_exists"].any()
+    assert report["point_in_time_violations"].sum() == 0

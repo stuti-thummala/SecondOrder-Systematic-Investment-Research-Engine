@@ -210,3 +210,13 @@ def _features(
         len(report),
         report_path,
     )
+    missing_files = int((~report["file_exists"]).sum())
+    missing_quarters = int(report["missing_quarters"].sum())
+    if missing_files or missing_quarters:
+        LOGGER.warning(
+            "incomplete data coverage missing_files=%d missing_series_quarters=%d "
+            "report=%s",
+            missing_files,
+            missing_quarters,
+            report_path,
+        )

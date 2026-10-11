@@ -83,24 +83,24 @@ industry:
       semiconductor_sales_proxy:
         series_id: IPG3344S
         frequency: monthly
-        units: index, 2017=100
-        economic_interpretation: Industrial production of semiconductor and electronic-component manufacturing.
-        known_limitations: Broader than semiconductor unit sales; represents U.S. domestic industrial production.
+        units: seasonally adjusted index, 2017=100
+        economic_interpretation: Industrial production for semiconductor and other electronic-component manufacturing.
+        known_limitations: Measures U.S. industrial output, not global semiconductor sales or unit shipments.
         availability_lag_days: 45
       memory_pricing_proxy:
         series_id: PCU334413334413
         frequency: monthly
-        units: producer price index
-        economic_interpretation: Producer-price movement for semiconductor and other electronic-component manufacturing.
-        known_limitations: Not memory-specific and does not directly measure contract or spot DRAM/HBM prices.
+        units: not-seasonally-adjusted index, December 1998=100
+        economic_interpretation: Producer-price movement for semiconductor and related device manufacturing.
+        known_limitations: Not DRAM- or HBM-specific and does not directly measure memory contract or spot prices.
         availability_lag_days: 45
       data_center_investment_proxy:
         series_id: PNFIC1
         frequency: quarterly
         units: billions of chained 2017 dollars, seasonally adjusted annual rate
-        economic_interpretation: U.S. private nonresidential fixed investment, a broad proxy for infrastructure investment.
-        known_limitations: Not data-center-specific and can move with unrelated private investment.
-        availability_lag_days: 90
+        economic_interpretation: U.S. real private nonresidential fixed investment, a broad proxy for infrastructure investment.
+        known_limitations: Not data-center-specific; BEA GDP-release series and can move with unrelated private investment.
+        availability_lag_days: 150
 
 market:
   yahoo_chart:
